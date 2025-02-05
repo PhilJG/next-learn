@@ -33,11 +33,17 @@ export async function fetchRevenue() {
 export async function fetchLatestInvoices() {
   try {
     const data = await sql<LatestInvoiceRaw[]>`
-      SELECT invoices.amount, customers.name, customers.image_url, customers.email, invoices.id
-      FROM invoices
-      JOIN customers ON invoices.customer_id = customers.id
-      ORDER BY invoices.date DESC
-      LIMIT 5`;
+     SELECT DISTINCT ON (customers.id) 
+    invoices.amount, 
+    customers.name, 
+    customers.image_url, 
+    customers.email, 
+    customers.id, 
+    invoices.date
+    FROM invoices
+    JOIN customers ON invoices.customer_id = customers.id
+    ORDER BY customers.id, invoices.date DESC
+    LIMIT 5`;
 
     const latestInvoices = data.map((invoice) => ({
       ...invoice,
@@ -68,8 +74,8 @@ export async function fetchCardData() {
       invoiceStatusPromise,
     ]);
 
-    const numberOfInvoices = Number(data[0].count ?? '0');
-    const numberOfCustomers = Number(data[1].count ?? '0');
+    const numberOfInvoices = Number(data[0][0].count ?? '0');
+    const numberOfCustomers = Number(data[1][0].count ?? '0');
     const totalPaidInvoices = formatCurrency(data[2][0].paid ?? '0');
     const totalPendingInvoices = formatCurrency(data[2][0].pending ?? '0');
 
